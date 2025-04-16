@@ -1,39 +1,46 @@
-<!-- src/components/UserCounter.vue -->
 <script setup>
 import { ref as vueRef, onMounted, onBeforeUnmount } from 'vue';
-// import { db, ref as firebaseRef, set, onValue, increment } from '../firebase';
 import { db, ref as firebaseRef, set, onValue, increment } from '../firebase';
+import { setupPresence, getOrCreateSessionId, cleanupInactiveSessions } from '../presence';
+
+// State
 const onlineUsers = vueRef(0);
 const totalVisitors = vueRef(0);
-const userSessionId = Date.now().toString();
+const sessionId = getOrCreateSessionId(); // Lấy hoặc tạo sessionId
+let cleanup;
 
-const initCounter = () => {
-  const userRef = firebaseRef(db, `sessions/${userSessionId}`);
-  const countRef = firebaseRef(db, 'counters/totalVisitors');
-  
-  set(countRef, increment(1));
-  set(userRef, { 
-    lastActive: Date.now(),
-    status: 'online'
+// Khởi tạo counter
+onMounted(() => {
+  const totalVisitorsRef = firebaseRef(db, 'counters/totalVisitors');
+
+  // Chỉ tăng totalVisitors nếu là phiên mới
+  if (!localStorage.getItem('hasVisited')) {
+    set(totalVisitorsRef, increment(1));
+    localStorage.setItem('hasVisited', 'true');
+  }
+
+  // Theo dõi tổng lượt truy cập
+  onValue(totalVisitorsRef, (snap) => {
+    totalVisitors.value = snap.val() || 0;
   });
 
-  window.addEventListener('beforeunload', () => {
-    set(userRef, null);
-  });
-
-  onValue(firebaseRef(db, 'sessions'), (snapshot) => {
-    const sessions = snapshot.val() || {};
+  // Theo dõi số người trực tuyến
+  const sessionsRef = firebaseRef(db, 'sessions');
+  onValue(sessionsRef, (snap) => {
+    const sessions = snap.val() || {};
     onlineUsers.value = Object.keys(sessions).length;
   });
 
-  onValue(countRef, (snapshot) => {
-    totalVisitors.value = snapshot.val() || 0;
-  });
-};
+  // Thiết lập presence
+  cleanup = setupPresence(sessionId);
 
-onMounted(initCounter);
+  // Dọn dẹp session không hoạt động
+  cleanupInactiveSessions();
+});
+
+// Cleanup khi component bị hủy
 onBeforeUnmount(() => {
-  set(firebaseRef(db, `sessions/${userSessionId}`), null);
+  if (cleanup) cleanup();
 });
 </script>
 
@@ -44,7 +51,6 @@ onBeforeUnmount(() => {
       <span class="value">{{ onlineUsers }}</span>
       <span class="label">Online</span>
     </div>
-    
     <div class="counter-item">
       <span class="icon">📊</span>
       <span class="value">{{ totalVisitors }}</span>
