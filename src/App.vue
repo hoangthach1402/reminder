@@ -199,7 +199,10 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="container">
-    <h1>🧘‍♀️ Thiền & Tư Thế Khi Làm Việc</h1>
+      <div class="logo-box">
+        <img src="./assets/logoMeditaiton.png" alt="Thiền Logo" class="logo" />
+      </div>
+    <h1>Thiền & Tư Thế Khi Làm Việc</h1>
     <div class="timer-select">
       <label>⏱ Hẹn giờ:</label>
       <select v-model="selectedDuration" :disabled="isActive">
@@ -385,4 +388,22 @@ button.active {
   cursor: not-allowed;
   border-color: #ddd;
 }
+
+.logo-box {
+  /* margin-top: 0px; */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* margin-bottom: 1rem; */
+}
+.logo {
+  color: #818181;
+  background-color: #818181;
+  border-radius: 50%;
+  width: 80px;
+  height: auto;
+  filter: grayscale(100%);
+  opacity: 0.8;
+}
+
 </style>
