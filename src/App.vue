@@ -1,67 +1,64 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onBeforeUnmount } from 'vue';
 import { Howl } from 'howler';
 import UserCounter from './components/UserCounter.vue';
+import BreathingGuide from './components/BreathingGuide.vue';
+import { TECHNIQUES } from './data/BreathingTechniques';
 
-// Cấu hình
-const BREATH_CYCLE = { 
-  DEFAULT: { IN: 4, HOLD: 7, OUT: 8 },
-  BOX: { IN: 4, HOLD: 4, OUT: 4, HOLD2: 4 }
-};
+// Configuration
 const POSTURE_REMINDER_INTERVAL = 3 * 60 * 1000;
 
-// Âm thanh
+// Audio
 const sounds = {
   breatheIn: new Howl({ src: ['/sounds/breathe-in.mp3'] }),
   breatheOut: new Howl({ src: ['/sounds/breathe-out.mp3'] }),
   hold: new Howl({ src: ['/sounds/hold-breath.mp3'] }),
   postureAlert: new Howl({ src: ['/sounds/posture-alert.mp3'] }),
-  count: Array.from({ length: 8 }, (_, i) => new Howl({ src: [`/sounds/${i + 1}.mp3`] }))
+  count: Array.from({ length: 8 }, (_, i) => new Howl({ src: [`/sounds/${i + 1}.mp3`] })),
 };
 
 // State
 const isActive = ref(false);
 const status = ref('Nhấn "Bắt đầu" để thiền');
-const currentMode = ref(null); // 'breathing' | 'posture'
+const currentMode = ref(null);
 const enableCount = ref(false);
 const elapsedTime = ref(0);
 const phaseTimeLeft = ref(0);
-const breathingTechnique = ref('DEFAULT'); // 'DEFAULT' | 'BOX'
+const breathingTechnique = ref(TECHNIQUES.DEFAULT);
+const selectedDuration = ref(0);
 
 let breathInterval, postureInterval, timerInterval;
 let countTimeouts = [];
 let phaseInterval;
-
-const useTimer = ref(false); // checkbox: có hẹn giờ hay không
-const meditationDuration = ref(10); // thời lượng hẹn giờ (phút)
-let timeoutStop; // timeout để dừng sau thời gian hẹn giờ
-const selectedDuration = ref(0); // phút, 0 là không hẹn giờ
 let stopAfterTimeout = null;
 
-// Hàm đếm số (1 -> n)
-const playCountSound = (n) => {
-  if (!isActive.value || !enableCount.value) return;
-  for (let i = 0; i < n; i++) {
-    const timeout = setTimeout(() => {
-      if (isActive.value && enableCount.value) {
-        sounds.count[i]?.play?.();
-      }
-    }, i * 1000);
-    countTimeouts.push(timeout);
+// Utility Functions
+const playCountSound = (duration) => {
+  if (!enableCount.value) return;
+  for (let i = 1; i <= duration; i++) {
+    countTimeouts.push(
+      setTimeout(() => {
+        sounds.count[i - 1]?.play?.();
+      }, (duration - i) * 1000)
+    );
   }
 };
 
 const clearAllCountTimeouts = () => {
-  countTimeouts.forEach(clearTimeout);
+  countTimeouts.forEach((timeout) => clearTimeout(timeout));
   countTimeouts = [];
 };
 
 const clearPhaseInterval = () => {
-  clearInterval(phaseInterval);
+  if (phaseInterval) {
+    clearInterval(phaseInterval);
+    phaseInterval = null;
+  }
 };
 
-// Cập nhật status theo từng giây
-const startPhase = (label, duration, sound, nextPhase) => {
+// Breathing Logic
+const startPhase = (label, duration, soundKey, nextPhase) => {
+  const sound = sounds[soundKey];
   phaseTimeLeft.value = duration;
   sound?.play?.();
   playCountSound(duration);
@@ -80,61 +77,43 @@ const startPhase = (label, duration, sound, nextPhase) => {
   }, 1000);
 };
 
-// Bắt đầu chu kỳ hít thở mặc định (4-7-8)
-const startDefaultBreathingCycle = () => {
-  if (!isActive.value) return;
-  currentMode.value = 'breathing';
-
-  startPhase('Hít vào', BREATH_CYCLE.DEFAULT.IN, sounds.breatheIn, () => {
-    startPhase('Giữ hơi', BREATH_CYCLE.DEFAULT.HOLD, sounds.hold, () => {
-      startPhase('Thở ra', BREATH_CYCLE.DEFAULT.OUT, sounds.breatheOut);
-    });
-  });
-};
-
-// Bắt đầu chu kỳ thở hộp (Box Breathing 4-4-4-4)
-const startBoxBreathingCycle = () => {
-  if (!isActive.value) return;
-  currentMode.value = 'breathing';
-
-  startPhase('Hít vào', BREATH_CYCLE.BOX.IN, sounds.breatheIn, () => {
-    startPhase('Giữ hơi', BREATH_CYCLE.BOX.HOLD, sounds.hold, () => {
-      startPhase('Thở ra', BREATH_CYCLE.BOX.OUT, sounds.breatheOut, () => {
-        startPhase('Giữ hơi', BREATH_CYCLE.BOX.HOLD2, sounds.hold);
-      });
-    });
-  });
-};
-
-// Chọn chu kỳ hít thở dựa trên kỹ thuật được chọn
 const startBreathingCycle = () => {
-  if (breathingTechnique.value === 'BOX') {
-    startBoxBreathingCycle();
-  } else {
-    startDefaultBreathingCycle();
-  }
-};
-
-// Tính tổng thời gian một chu kỳ thở
-const getBreathCycleDuration = () => {
-  if (breathingTechnique.value === 'BOX') {
-    return BREATH_CYCLE.BOX.IN + BREATH_CYCLE.BOX.HOLD + BREATH_CYCLE.BOX.OUT + BREATH_CYCLE.BOX.HOLD2;
-  }
-  return BREATH_CYCLE.DEFAULT.IN + BREATH_CYCLE.DEFAULT.HOLD + BREATH_CYCLE.DEFAULT.OUT;
-};
-
-// Nhắc tư thế
-const triggerPostureReminder = () => {
   if (!isActive.value) return;
-  currentMode.value = 'posture';
-  clearPhaseInterval();
-  status.value = '🪑 Ngồi thẳng lưng!';
-  sounds.postureAlert?.play?.();
+  currentMode.value = 'breathing';
 
-  setTimeout(() => startBreathingCycle(), 3000);
+  const steps = breathingTechnique.value.steps;
+  let currentStep = 0;
+
+  const executeStep = () => {
+    if (currentStep >= steps.length) {
+      if (isActive.value) startBreathingCycle(); // Loop if still active
+      return;
+    }
+
+    const step = steps[currentStep];
+    startPhase(
+      step.action,
+      step.duration,
+      step.sound,
+      () => {
+        currentStep++;
+        executeStep();
+      }
+    );
+  };
+
+  executeStep();
 };
 
-// Đếm thời gian thiền
+const handleBreathingChange = () => {
+  if (isActive.value) {
+    clearPhaseInterval();
+    clearAllCountTimeouts();
+    startBreathingCycle();
+  }
+};
+
+// Timer Logic
 const startTimer = () => {
   timerInterval = setInterval(() => {
     elapsedTime.value++;
@@ -142,48 +121,58 @@ const startTimer = () => {
 };
 
 const stopTimer = () => {
-  clearInterval(timerInterval);
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
 };
 
-// Bật/tắt hệ thống
+// Posture Reminder
+const triggerPostureReminder = () => {
+  currentMode.value = 'posture';
+  status.value = 'Hãy kiểm tra tư thế của bạn!';
+  sounds.postureAlert?.play?.();
+  setTimeout(() => {
+    if (isActive.value && currentMode.value === 'posture') {
+      currentMode.value = 'breathing';
+      startBreathingCycle();
+    }
+  }, 5000); // Show posture alert for 5 seconds
+};
+
+// Main Control
 const toggleSystem = () => {
-  isActive.value = !isActive.value;
-
   if (isActive.value) {
+    // Stop meditation
+    isActive.value = false;
+    currentMode.value = null;
+    status.value = 'Nhấn "Bắt đầu" để thiền';
     elapsedTime.value = 0;
-    startBreathingCycle();
-    startTimer();
-
-    breathInterval = setInterval(
-      startBreathingCycle,
-      getBreathCycleDuration() * 1000
-    );
-    postureInterval = setInterval(triggerPostureReminder, POSTURE_REMINDER_INTERVAL);
-
-    if (useTimer.value) {
-      timeoutStop = setTimeout(() => {
-        toggleSystem(); // tự dừng
-      }, meditationDuration.value * 60 * 1000); // đổi phút sang ms
-    }
-    if (selectedDuration.value > 0) {
-      stopAfterTimeout = setTimeout(() => {
-        isActive.value = false;
-        clearInterval(breathInterval);
-        clearInterval(postureInterval);
-        stopTimer();
-        clearPhaseInterval();
-        clearAllCountTimeouts();
-        status.value = '⏰ Đã hết thời gian thiền';
-      }, selectedDuration.value * 60 * 1000);
-    }
-  } else {
-    clearInterval(breathInterval);
-    clearInterval(postureInterval);
-    stopTimer();
     clearPhaseInterval();
     clearAllCountTimeouts();
-    clearTimeout(timeoutStop); // nếu người dùng dừng thủ công trước khi timeout
-    status.value = 'Đã dừng';
+    clearInterval(postureInterval);
+    stopTimer();
+    if (stopAfterTimeout) {
+      clearTimeout(stopAfterTimeout);
+      stopAfterTimeout = null;
+    }
+    Object.values(sounds).forEach((sound) => sound.stop?.());
+    if (Array.isArray(sounds.count)) {
+      sounds.count.forEach((sound) => sound.stop?.());
+    }
+  } else {
+    // Start meditation
+    isActive.value = true;
+    elapsedTime.value = 0;
+    startTimer();
+    startBreathingCycle();
+    postureInterval = setInterval(triggerPostureReminder, POSTURE_REMINDER_INTERVAL);
+
+    if (selectedDuration.value > 0) {
+      stopAfterTimeout = setTimeout(() => {
+        toggleSystem(); // Auto-stop after selected duration
+      }, selectedDuration.value * 60 * 1000);
+    }
   }
 };
 
@@ -194,18 +183,25 @@ onBeforeUnmount(() => {
   stopTimer();
   clearPhaseInterval();
   clearAllCountTimeouts();
+  if (stopAfterTimeout) {
+    clearTimeout(stopAfterTimeout);
+  }
+  Object.values(sounds).forEach((sound) => sound.unload?.());
+  if (Array.isArray(sounds.count)) {
+    sounds.count.forEach((sound) => sound.unload?.());
+  }
 });
 </script>
 
 <template>
   <div class="container">
-      <div class="logo-box">
-        <img src="./assets/logoMeditaiton.png" alt="Thiền Logo" class="logo" />
-      </div>
+    <div class="logo-box">
+      <img src="./assets/logoMeditaiton.png" alt="Logo ứng dụng thiền và tư thế" class="logo" />
+    </div>
     <h1>Thiền & Tư Thế Khi Làm Việc</h1>
     <div class="timer-select">
-      <label>⏱ Hẹn giờ:</label>
-      <select v-model="selectedDuration" :disabled="isActive">
+      <label for="timer-select">⏱ Hẹn giờ:</label>
+      <select id="timer-select" v-model="selectedDuration" :disabled="isActive">
         <option :value="0">Không hẹn giờ</option>
         <option :value="5">5 phút</option>
         <option :value="10">10 phút</option>
@@ -215,19 +211,30 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="breath-technique">
-      <label>Kỹ thuật thở:</label>
-      <select v-model="breathingTechnique" :disabled="isActive">
-        <option value="DEFAULT">4-7-8 (Mặc định)</option>
-        <option value="BOX">Thở hộp (Box Breathing)</option>
+      <label for="breath-technique">Kỹ thuật thở:</label>
+      <select
+        id="breath-technique"
+        v-model="breathingTechnique"
+        :disabled="isActive"
+        @change="handleBreathingChange"
+      >
+        <option v-for="tech in Object.values(TECHNIQUES)" :key="tech.id" :value="tech">
+          {{ tech.name }}
+        </option>
       </select>
     </div>
 
-    <div class="status-box" :class="{ breathing: currentMode === 'breathing', posture: currentMode === 'posture' }">
+    <div
+      class="status-box"
+      :class="{ breathing: currentMode === 'breathing', posture: currentMode === 'posture' }"
+      role="status"
+      aria-live="polite"
+    >
       {{ status }}
     </div>
 
     <div class="controls">
-      <button @click="toggleSystem" :class="{ active: isActive }">
+      <button @click="toggleSystem" :class="{ active: isActive }" :aria-pressed="isActive">
         {{ isActive ? 'Dừng Thiền' : 'Bắt Đầu' }}
       </button>
       <label>
@@ -240,29 +247,7 @@ onBeforeUnmount(() => {
       🕒 Thời gian thiền: {{ Math.floor(elapsedTime / 60) }} phút {{ elapsedTime % 60 }} giây
     </div>
 
-    <div class="breath-guide" v-if="breathingTechnique === 'DEFAULT'">
-  <p>Kỹ thuật 4-7-8:</p>
-  <ul>
-    <li>Hít vào <span>4 giây</span></li>
-    <li>Giữ hơi <span>7 giây</span></li>
-    <li>Thở ra <span>8 giây</span></li>
-  </ul>
-  <p class="benefit">Lợi ích: Giúp thư giãn nhanh, giảm lo âu, dễ đi vào giấc ngủ. Độ khó: ⭐⭐☆ (Trung bình, cần tập trung vào nhịp thở). Đối tượng: Người mất ngủ, căng thẳng cần thư giãn nhanh.</p>
-</div>
-
-    <div class="breath-guide" v-else>
-      <p>Kỹ thuật Thở hộp (Box Breathing):</p>
-      <ul>
-        <li>Hít vào <span>4 giây</span></li>
-        <li>Giữ hơi <span>4 giây</span></li>
-        <li>Thở ra <span>4 giây</span></li>
-        <li>Giữ hơi <span>4 giây</span></li>
-      </ul>
-      <p class="benefit">Lợi ích: Ổn định nhịp tim, giảm stress cấp tốc (dùng trong quân đội, thể thao). Độ khó: ⭐⭐ (Dễ nhớ nhưng cần kiểm soát tốt).
-        Đối tượng: Dân văn phòng, lập trình viên hay dùng để lấy lại bình tĩnh khi deadline.
-
-      </p>
-    </div>
+    <BreathingGuide :technique="breathingTechnique" />
 
     <UserCounter class="user-counter" />
   </div>
@@ -308,7 +293,7 @@ button {
 button.active {
   background: #f44336;
 }
-.breath-guide {
+.breathing-guide {
   color: #818181;
   font-weight: bold;
   margin-top: 2rem;
@@ -317,28 +302,20 @@ button.active {
   padding: 1rem;
   border-radius: 8px;
 }
-.breath-guide span {
+.breathing-guide span {
   font-weight: bold;
   color: #818181;
 }
-.breath-guide .benefit {
+.breathing-guide .benefit {
   font-weight: normal;
   font-size: 0.9rem;
   margin-top: 0.5rem;
   color: #666;
 }
-.meditation-time {
-  font-size: 1.1rem;
-  margin-bottom: 0.5rem;
-  color: #555;
-}
-.checkbox {
-  margin-top: 1rem;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+.timer {
+  margin-bottom: 1rem;
+  font-weight: bold;
+  color: #3f51b5;
 }
 .controls {
   margin: 1rem 0;
@@ -347,18 +324,8 @@ button.active {
   gap: 1rem;
   align-items: center;
 }
-.timer {
-  margin-bottom: 1rem;
-  font-weight: bold;
-  color: #3f51b5;
-}
-.checkbox input[type='number'] {
-  padding: 0.3rem;
-  text-align: center;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-}
-.timer-select, .breath-technique {
+.timer-select,
+.breath-technique {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -366,13 +333,13 @@ button.active {
   font-size: 1rem;
   margin-bottom: 0.5rem;
 }
-
-.timer-select label, .breath-technique label {
+.timer-select label,
+.breath-technique label {
   font-weight: bold;
   color: #818181;
 }
-
-.timer-select select, .breath-technique select {
+.timer-select select,
+.breath-technique select {
   padding: 0.4rem 1rem;
   border-radius: 8px;
   border: 1px solid #ccc;
@@ -381,20 +348,17 @@ button.active {
   color: #818181;
   transition: border-color 0.3s;
 }
-
-.timer-select select:disabled, .breath-technique select:disabled {
+.timer-select select:disabled,
+.breath-technique select:disabled {
   background-color: #f0f0f0;
   color: #999;
   cursor: not-allowed;
   border-color: #ddd;
 }
-
 .logo-box {
-  /* margin-top: 0px; */
   display: flex;
   justify-content: center;
   align-items: center;
-  /* margin-bottom: 1rem; */
 }
 .logo {
   color: #818181;
@@ -405,5 +369,4 @@ button.active {
   filter: grayscale(100%);
   opacity: 0.8;
 }
-
 </style>
