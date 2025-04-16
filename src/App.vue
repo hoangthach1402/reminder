@@ -255,7 +255,10 @@ onBeforeUnmount(() => {
         <li>Thở ra <span>4 giây</span></li>
         <li>Giữ hơi <span>4 giây</span></li>
       </ul>
-      <p class="benefit">Lợi ích: Ổn định nhịp tim, giảm stress cấp tốc (dùng trong quân đội, thể thao). Độ khó: ⭐⭐ (Dễ nhớ nhưng cần kiểm soát tốt).</p>
+      <p class="benefit">Lợi ích: Ổn định nhịp tim, giảm stress cấp tốc (dùng trong quân đội, thể thao). Độ khó: ⭐⭐ (Dễ nhớ nhưng cần kiểm soát tốt).
+        Đối tượng: Dân văn phòng, lập trình viên hay dùng để lấy lại bình tĩnh khi deadline.
+
+      </p>
     </div>
 
     <UserCounter class="user-counter" />
