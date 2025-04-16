@@ -4,7 +4,7 @@ import { Howl } from 'howler';
 import UserCounter from './components/UserCounter.vue';
 import BreathingGuide from './components/BreathingGuide.vue';
 import { TECHNIQUES } from './data/BreathingTechniques';
-
+import Logo from './components/Logo.vue';
 // Configuration
 const POSTURE_REMINDER_INTERVAL = 3 * 60 * 1000;
 
@@ -195,9 +195,10 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="container">
-    <div class="logo-box">
+    <Logo />
+    <!-- <div class="logo-box">
       <img src="./assets/logoMeditaiton.png" alt="Logo ứng dụng thiền và tư thế" class="logo" />
-    </div>
+    </div> -->
     <h1>Thiền & Tư Thế Khi Làm Việc</h1>
     <div class="timer-select">
       <label for="timer-select">⏱ Hẹn giờ:</label>
