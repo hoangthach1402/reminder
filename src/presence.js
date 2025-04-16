@@ -34,7 +34,7 @@ export function setupPresence(sessionId) {
     }
   });
 
-  // Heartbeat: Cập nhật trạng thái mỗi 5 giây
+  // Heartbeat: Cập nhật trạng thái mỗi 3 giây
   const heartbeat = setInterval(() => {
     set(sessionRef, {
       lastActive: Date.now(),
@@ -42,14 +42,18 @@ export function setupPresence(sessionId) {
       startTime: startTime,
       endTime: null
     });
-  }, 5000);
+  }, 3000); // Giảm xuống 3 giây
 
   // Theo dõi và lưu thống kê hàng ngày
   updateDailyStats();
 
+  // Dọn dẹp session liên tục
+  const cleanupInterval = setInterval(cleanupInactiveSessions, 10000); // Chạy mỗi 10 giây
+
   // Cleanup khi component bị hủy
   return () => {
     clearInterval(heartbeat);
+    clearInterval(cleanupInterval);
     set(sessionRef, {
       lastActive: Date.now(),
       status: 'offline',
@@ -66,7 +70,7 @@ export function cleanupInactiveSessions() {
     const sessions = snap.val() || {};
     const now = Date.now();
     for (const [id, session] of Object.entries(sessions)) {
-      if (session.lastActive < now - 10000 && session.status === 'online') {
+      if (session.lastActive < now - 5000 && session.status === 'online') { // Giảm ngưỡng xuống 5 giây
         set(ref(db, `sessions/${id}`), {
           ...session,
           status: 'offline',

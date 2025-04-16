@@ -5,7 +5,6 @@ import { setupPresence, getOrCreateSessionId, cleanupInactiveSessions } from '..
 import Chart from 'chart.js/auto';
 import 'chartjs-adapter-date-fns';
 
-// State
 const onlineUsers = vueRef(0);
 const totalVisitors = vueRef(0);
 const sessionId = getOrCreateSessionId();
@@ -13,7 +12,6 @@ let cleanup;
 const chartData = vueRef({ labels: [], datasets: [] });
 let chartInstance = null;
 
-// Khởi tạo counter
 onMounted(() => {
   const totalVisitorsRef = firebaseRef(db, 'counters/totalVisitors');
 
@@ -29,21 +27,21 @@ onMounted(() => {
   const sessionsRef = firebaseRef(db, 'sessions');
   onValue(sessionsRef, (snap) => {
     const sessions = snap.val() || {};
-    onlineUsers.value = Object.keys(sessions).length;
+    onlineUsers.value = Object.values(sessions).filter(
+      (session) => session.status === 'online'
+    ).length; // Chỉ đếm session có status 'online'
   });
 
-  // Lấy dữ liệu thống kê để vẽ biểu đồ
   const dailyStatsRef = firebaseRef(db, 'dailyStats');
   onValue(dailyStatsRef, (snap) => {
     const stats = snap.val() || {};
     const labels = [];
     const data = [];
 
-    // Sắp xếp theo ngày
     const sortedDays = Object.keys(stats).sort();
     sortedDays.forEach((day) => {
-      labels.push(day); // Ngày (YYYY-MM-DD)
-      data.push(stats[day].maxOnline); // Số người online tối đa
+      labels.push(day);
+      data.push(stats[day].maxOnline);
     });
 
     chartData.value = {
@@ -59,7 +57,6 @@ onMounted(() => {
       ]
     };
 
-    // Vẽ biểu đồ
     if (chartInstance) chartInstance.destroy();
     const ctx = document.getElementById('onlineChart').getContext('2d');
     chartInstance = new Chart(ctx, {
