@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { Howl } from 'howler';
-
+import UserCounter from './components/UserCounter.vue';
 // Cấu hình
 const BREATH_CYCLE = { IN: 4, HOLD: 7, OUT: 8 };
 const POSTURE_REMINDER_INTERVAL = 3 * 60 * 1000;
@@ -155,11 +155,18 @@ onBeforeUnmount(() => {
         <li>Thở ra <span>8 giây</span></li>
       </ul>
     </div>
+    <UserCounter  class="user-counter"/>
   </div>
 </template>
 
 
 <style scoped>
+.user-counter {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  /* background: #000; */
+}
 .container {
   text-align: center;
   max-width: 500px;
