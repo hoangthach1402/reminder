@@ -28,6 +28,11 @@ let breathInterval, postureInterval, timerInterval;
 let countTimeouts = [];
 let phaseInterval;
 
+const useTimer = ref(false); // checkbox: có hẹn giờ hay không
+const meditationDuration = ref(10); // thời lượng hẹn giờ (phút)
+let timeoutStop; // timeout để dừng sau thời gian hẹn giờ
+const selectedDuration = ref(0); // phút, 0 là không hẹn giờ
+let stopAfterTimeout = null;
 // Hàm đếm số (1 -> n)
 const playCountSound = (n) => {
   if (!isActive.value || !enableCount.value) return;
@@ -112,21 +117,39 @@ const toggleSystem = () => {
     elapsedTime.value = 0;
     startBreathingCycle();
     startTimer();
+
     breathInterval = setInterval(
       startBreathingCycle,
       (BREATH_CYCLE.IN + BREATH_CYCLE.HOLD + BREATH_CYCLE.OUT) * 1000
     );
     postureInterval = setInterval(triggerPostureReminder, POSTURE_REMINDER_INTERVAL);
+
+    if (useTimer.value) {
+      timeoutStop = setTimeout(() => {
+        toggleSystem(); // tự dừng
+      }, meditationDuration.value * 60 * 1000); // đổi phút sang ms
+    }
+    if (selectedDuration.value > 0) {
+    stopAfterTimeout = setTimeout(() => {
+      isActive.value = false;
+      clearInterval(breathInterval);
+      clearInterval(postureInterval);
+      stopTimer();
+      clearPhaseInterval();
+      clearAllCountTimeouts();
+      status.value = '⏰ Đã hết thời gian thiền';
+    }, selectedDuration.value * 60 * 1000);
+  }
   } else {
     clearInterval(breathInterval);
     clearInterval(postureInterval);
     stopTimer();
     clearPhaseInterval();
     clearAllCountTimeouts();
+    clearTimeout(timeoutStop); // nếu người dùng dừng thủ công trước khi timeout
     status.value = 'Đã dừng';
   }
 };
-
 // Cleanup
 onBeforeUnmount(() => {
   clearInterval(breathInterval);
@@ -140,6 +163,17 @@ onBeforeUnmount(() => {
 <template>
   <div class="container">
     <h1>🧘‍♀️ Thiền & Tư Thế Khi Làm Việc</h1>
+    <div class="timer-select">
+  <label>⏱ Hẹn giờ:</label>
+  <select v-model="selectedDuration" :disabled="isActive">
+    <option :value="0">Không hẹn giờ</option>
+    <option :value="5">5 phút</option>
+    <option :value="10">10 phút</option>
+    <option :value="15">15 phút</option>
+    <option :value="20">20 phút</option>
+  </select>
+</div>
+
 
     <div class="status-box" :class="{ breathing: currentMode === 'breathing', posture: currentMode === 'posture' }">
       {{ status }}
@@ -213,7 +247,7 @@ button.active {
   background: #f44336;
 }
 .breath-guide {
-  color: rgb(21, 209, 33);
+  color: #818181;
   font-weight: bold;
   margin-top: 2rem;
   text-align: left;
@@ -223,7 +257,7 @@ button.active {
 }
 .breath-guide span {
   font-weight: bold;
-  color: #2e7d32;
+  color: #818181;
 }
 .meditation-time {
   font-size: 1.1rem;
@@ -250,4 +284,40 @@ button.active {
   font-weight: bold;
   color: #3f51b5;
 }
+.checkbox input[type='number'] {
+  padding: 0.3rem;
+  text-align: center;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+.timer-select {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.timer-select label {
+  font-weight: bold;
+  color: #818181;
+}
+
+.timer-select select {
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  background-color: #fff;
+  color: #818181;
+  transition: border-color 0.3s;
+}
+
+.timer-select select:disabled {
+  background-color: #f0f0f0;
+  color: #999;
+  cursor: not-allowed;
+  border-color: #ddd;
+}
+
 </style>
