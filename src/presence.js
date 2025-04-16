@@ -1,6 +1,6 @@
 import { db, ref, set, onValue, onDisconnect } from './firebase';
 
-// Khởi tạo hoặc lấy sessionId từ localStorage
+// Lấy hoặc tạo sessionId từ localStorage
 export function getOrCreateSessionId() {
   let sessionId = localStorage.getItem('sessionId');
   if (!sessionId) {
@@ -10,28 +10,52 @@ export function getOrCreateSessionId() {
   return sessionId;
 }
 
+// Theo dõi trạng thái trực tuyến
 export function setupPresence(sessionId) {
   const sessionRef = ref(db, `sessions/${sessionId}`);
   const connectedRef = ref(db, '.info/connected');
+  const startTime = Date.now();
 
   // Khi người dùng kết nối
   onValue(connectedRef, (snap) => {
     if (snap.val()) {
-      set(sessionRef, { lastActive: Date.now(), status: 'online' });
-      // Tự động xóa session khi ngắt kết nối
-      onDisconnect(sessionRef).remove();
+      set(sessionRef, {
+        lastActive: Date.now(),
+        status: 'online',
+        startTime: startTime,
+        endTime: null
+      });
+      onDisconnect(sessionRef).set({
+        lastActive: Date.now(),
+        status: 'offline',
+        startTime: startTime,
+        endTime: Date.now()
+      });
     }
   });
 
   // Heartbeat: Cập nhật trạng thái mỗi 5 giây
   const heartbeat = setInterval(() => {
-    set(sessionRef, { lastActive: Date.now(), status: 'online' });
+    set(sessionRef, {
+      lastActive: Date.now(),
+      status: 'online',
+      startTime: startTime,
+      endTime: null
+    });
   }, 5000);
+
+  // Theo dõi và lưu thống kê hàng ngày
+  updateDailyStats();
 
   // Cleanup khi component bị hủy
   return () => {
     clearInterval(heartbeat);
-    set(sessionRef, null);
+    set(sessionRef, {
+      lastActive: Date.now(),
+      status: 'offline',
+      startTime: startTime,
+      endTime: Date.now()
+    });
   };
 }
 
@@ -42,9 +66,42 @@ export function cleanupInactiveSessions() {
     const sessions = snap.val() || {};
     const now = Date.now();
     for (const [id, session] of Object.entries(sessions)) {
-      if (session.lastActive < now - 10000) { // Xóa sau 10 giây không hoạt động
-        set(ref(db, `sessions/${id}`), null);
+      if (session.lastActive < now - 10000 && session.status === 'online') {
+        set(ref(db, `sessions/${id}`), {
+          ...session,
+          status: 'offline',
+          endTime: now
+        });
       }
     }
   }, { onlyOnce: true });
+}
+
+// Cập nhật thống kê hàng ngày
+export function updateDailyStats() {
+  const sessionsRef = ref(db, 'sessions');
+  const dailyStatsRef = ref(db, `dailyStats/${getDateKey()}`);
+
+  onValue(sessionsRef, (snap) => {
+    const sessions = snap.val() || {};
+    const onlineCount = Object.values(sessions).filter(
+      (session) => session.status === 'online'
+    ).length;
+
+    onValue(dailyStatsRef, (statSnap) => {
+      const currentMax = statSnap.val()?.maxOnline || 0;
+      if (onlineCount > currentMax) {
+        set(dailyStatsRef, {
+          date: getDateKey(),
+          maxOnline: onlineCount
+        });
+      }
+    }, { onlyOnce: true });
+  });
+}
+
+// Hàm lấy key ngày (định dạng YYYY-MM-DD)
+function getDateKey() {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }

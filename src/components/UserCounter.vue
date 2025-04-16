@@ -2,64 +2,134 @@
 import { ref as vueRef, onMounted, onBeforeUnmount } from 'vue';
 import { db, ref as firebaseRef, set, onValue, increment } from '../firebase';
 import { setupPresence, getOrCreateSessionId, cleanupInactiveSessions } from '../presence';
+import Chart from 'chart.js/auto';
+import 'chartjs-adapter-date-fns';
 
 // State
 const onlineUsers = vueRef(0);
 const totalVisitors = vueRef(0);
-const sessionId = getOrCreateSessionId(); // Lấy hoặc tạo sessionId
+const sessionId = getOrCreateSessionId();
 let cleanup;
+const chartData = vueRef({ labels: [], datasets: [] });
+let chartInstance = null;
 
 // Khởi tạo counter
 onMounted(() => {
   const totalVisitorsRef = firebaseRef(db, 'counters/totalVisitors');
 
-  // Chỉ tăng totalVisitors nếu là phiên mới
   if (!localStorage.getItem('hasVisited')) {
     set(totalVisitorsRef, increment(1));
     localStorage.setItem('hasVisited', 'true');
   }
 
-  // Theo dõi tổng lượt truy cập
   onValue(totalVisitorsRef, (snap) => {
     totalVisitors.value = snap.val() || 0;
   });
 
-  // Theo dõi số người trực tuyến
   const sessionsRef = firebaseRef(db, 'sessions');
   onValue(sessionsRef, (snap) => {
     const sessions = snap.val() || {};
     onlineUsers.value = Object.keys(sessions).length;
   });
 
-  // Thiết lập presence
-  cleanup = setupPresence(sessionId);
+  // Lấy dữ liệu thống kê để vẽ biểu đồ
+  const dailyStatsRef = firebaseRef(db, 'dailyStats');
+  onValue(dailyStatsRef, (snap) => {
+    const stats = snap.val() || {};
+    const labels = [];
+    const data = [];
 
-  // Dọn dẹp session không hoạt động
+    // Sắp xếp theo ngày
+    const sortedDays = Object.keys(stats).sort();
+    sortedDays.forEach((day) => {
+      labels.push(day); // Ngày (YYYY-MM-DD)
+      data.push(stats[day].maxOnline); // Số người online tối đa
+    });
+
+    chartData.value = {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Số người online tối đa mỗi ngày',
+          data: data,
+          borderColor: 'rgba(75, 192, 192, 1)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          fill: false
+        }
+      ]
+    };
+
+    // Vẽ biểu đồ
+    if (chartInstance) chartInstance.destroy();
+    const ctx = document.getElementById('onlineChart').getContext('2d');
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: chartData.value,
+      options: {
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              displayFormats: {
+                day: 'yyyy-MM-dd'
+              }
+            },
+            title: {
+              display: true,
+              text: 'Ngày'
+            }
+          },
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Số người online'
+            }
+          }
+        }
+      }
+    });
+  });
+
+  cleanup = setupPresence(sessionId);
   cleanupInactiveSessions();
 });
 
-// Cleanup khi component bị hủy
 onBeforeUnmount(() => {
   if (cleanup) cleanup();
+  if (chartInstance) chartInstance.destroy();
 });
 </script>
 
 <template>
-  <div class="user-counter">
-    <div class="counter-item">
-      <span class="icon">👥</span>
-      <span class="value">{{ onlineUsers }}</span>
-      <span class="label">Online</span>
+  <div class="user-counter-container">
+    <div class="user-counter">
+      <div class="counter-item">
+        <span class="icon">👥</span>
+        <span class="value">{{ onlineUsers }}</span>
+        <span class="label">Online</span>
+      </div>
+      <div class="counter-item">
+        <span class="icon">📊</span>
+        <span class="value">{{ totalVisitors }}</span>
+        <span class="label">Tổng lượt</span>
+      </div>
     </div>
-    <div class="counter-item">
-      <span class="icon">📊</span>
-      <span class="value">{{ totalVisitors }}</span>
-      <span class="label">Tổng lượt</span>
+    <div class="chart-container">
+      <canvas id="onlineChart"></canvas>
     </div>
   </div>
 </template>
 
 <style scoped>
+.user-counter-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+}
+
 .user-counter {
   display: flex;
   gap: 20px;
@@ -87,5 +157,10 @@ onBeforeUnmount(() => {
 .label {
   color: #7f8c8d;
   font-size: 0.9em;
+}
+
+.chart-container {
+  max-width: 800px;
+  margin: 0 auto;
 }
 </style>
