@@ -238,13 +238,14 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="breath-guide" v-if="breathingTechnique === 'DEFAULT'">
-      <p>Kỹ thuật 4-7-8:</p>
-      <ul>
-        <li>Hít vào <span>4 giây</span></li>
-        <li>Giữ hơi <span>7 giây</span></li>
-        <li>Thở ra <span>8 giây</span></li>
-      </ul>
-    </div>
+  <p>Kỹ thuật 4-7-8:</p>
+  <ul>
+    <li>Hít vào <span>4 giây</span></li>
+    <li>Giữ hơi <span>7 giây</span></li>
+    <li>Thở ra <span>8 giây</span></li>
+  </ul>
+  <p class="benefit">Lợi ích: Giúp thư giãn nhanh, giảm lo âu, dễ đi vào giấc ngủ. Độ khó: ⭐⭐☆ (Trung bình, cần tập trung vào nhịp thở). Đối tượng: Người mất ngủ, căng thẳng cần thư giãn nhanh.</p>
+</div>
 
     <div class="breath-guide" v-else>
       <p>Kỹ thuật Thở hộp (Box Breathing):</p>
