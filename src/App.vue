@@ -2,6 +2,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { Howl } from 'howler';
 import UserCounter from './components/UserCounter.vue';
+
 // Cấu hình
 const BREATH_CYCLE = { IN: 4, HOLD: 7, OUT: 8 };
 const POSTURE_REMINDER_INTERVAL = 3 * 60 * 1000;
@@ -12,9 +13,7 @@ const sounds = {
   breatheOut: new Howl({ src: ['/sounds/breathe-out.mp3'] }),
   hold: new Howl({ src: ['/sounds/hold-breath.mp3'] }),
   postureAlert: new Howl({ src: ['/sounds/posture-alert.mp3'] }),
-  count: Array.from({ length: 8 }, (_, i) =>
-    new Howl({ src: [`/sounds/${i + 1}.mp3`] })
-  )
+  count: Array.from({ length: 8 }, (_, i) => new Howl({ src: [`/sounds/${i + 1}.mp3`] }))
 };
 
 // State
@@ -23,8 +22,11 @@ const status = ref('Nhấn "Bắt đầu" để thiền');
 const currentMode = ref(null); // 'breathing' | 'posture'
 const enableCount = ref(false);
 const elapsedTime = ref(0);
+const phaseTimeLeft = ref(0);
+
 let breathInterval, postureInterval, timerInterval;
 let countTimeouts = [];
+let phaseInterval;
 
 // Hàm đếm số (1 -> n)
 const playCountSound = (n) => {
@@ -32,54 +34,61 @@ const playCountSound = (n) => {
   for (let i = 0; i < n; i++) {
     const timeout = setTimeout(() => {
       if (isActive.value && enableCount.value) {
-        sounds.count[i].play();
+        sounds.count[i]?.play?.();
       }
     }, i * 1000);
     countTimeouts.push(timeout);
   }
 };
 
-// Hủy toàn bộ timeout đếm
 const clearAllCountTimeouts = () => {
   countTimeouts.forEach(clearTimeout);
   countTimeouts = [];
 };
 
-// Chu kỳ hít thở
+const clearPhaseInterval = () => {
+  clearInterval(phaseInterval);
+};
+
+// Cập nhật status theo từng giây
+const startPhase = (label, duration, sound, nextPhase) => {
+  phaseTimeLeft.value = duration;
+  sound?.play?.();
+  playCountSound(duration);
+
+  clearPhaseInterval();
+  status.value = `${label}... ${phaseTimeLeft.value}s`;
+
+  phaseInterval = setInterval(() => {
+    phaseTimeLeft.value--;
+    if (phaseTimeLeft.value <= 0) {
+      clearPhaseInterval();
+      nextPhase?.();
+    } else {
+      status.value = `${label}... ${phaseTimeLeft.value}s`;
+    }
+  }, 1000);
+};
+
+// Bắt đầu chu kỳ hít thở
 const startBreathingCycle = () => {
   if (!isActive.value) return;
   currentMode.value = 'breathing';
 
-  // Hít vào
-  status.value = `Hít vào... ${BREATH_CYCLE.IN}s`;
-  sounds.breatheIn.play();
-  playCountSound(BREATH_CYCLE.IN);
-
-  setTimeout(() => {
-    if (!isActive.value) return;
-
-    // Giữ hơi
-    status.value = `Giữ hơi... ${BREATH_CYCLE.HOLD}s`;
-    sounds.hold.play();
-    playCountSound(BREATH_CYCLE.HOLD);
-
-    setTimeout(() => {
-      if (!isActive.value) return;
-
-      // Thở ra
-      status.value = `Thở ra... ${BREATH_CYCLE.OUT}s`;
-      sounds.breatheOut.play();
-      playCountSound(BREATH_CYCLE.OUT);
-    }, BREATH_CYCLE.HOLD * 1000);
-  }, BREATH_CYCLE.IN * 1000);
+  startPhase('Hít vào', BREATH_CYCLE.IN, sounds.breatheIn, () => {
+    startPhase('Giữ hơi', BREATH_CYCLE.HOLD, sounds.hold, () => {
+      startPhase('Thở ra', BREATH_CYCLE.OUT, sounds.breatheOut);
+    });
+  });
 };
 
 // Nhắc tư thế
 const triggerPostureReminder = () => {
   if (!isActive.value) return;
   currentMode.value = 'posture';
-  status.value = "🪑 Ngồi thẳng lưng!";
-  sounds.postureAlert.play();
+  clearPhaseInterval();
+  status.value = '🪑 Ngồi thẳng lưng!';
+  sounds.postureAlert?.play?.();
 
   setTimeout(() => startBreathingCycle(), 3000);
 };
@@ -95,7 +104,7 @@ const stopTimer = () => {
   clearInterval(timerInterval);
 };
 
-// Bật/tắt
+// Bật/tắt hệ thống
 const toggleSystem = () => {
   isActive.value = !isActive.value;
 
@@ -112,8 +121,9 @@ const toggleSystem = () => {
     clearInterval(breathInterval);
     clearInterval(postureInterval);
     stopTimer();
+    clearPhaseInterval();
     clearAllCountTimeouts();
-    status.value = "Đã dừng";
+    status.value = 'Đã dừng';
   }
 };
 
@@ -122,10 +132,10 @@ onBeforeUnmount(() => {
   clearInterval(breathInterval);
   clearInterval(postureInterval);
   stopTimer();
+  clearPhaseInterval();
   clearAllCountTimeouts();
 });
 </script>
-
 
 <template>
   <div class="container">
@@ -145,7 +155,9 @@ onBeforeUnmount(() => {
       </label>
     </div>
 
-    <div class="timer">🕒 Thời gian thiền: {{ Math.floor(elapsedTime / 60) }} phút {{ elapsedTime % 60 }} giây</div>
+    <div class="timer">
+      🕒 Thời gian thiền: {{ Math.floor(elapsedTime / 60) }} phút {{ elapsedTime % 60 }} giây
+    </div>
 
     <div class="breath-guide">
       <p>Kỹ thuật 4-7-8:</p>
@@ -155,17 +167,16 @@ onBeforeUnmount(() => {
         <li>Thở ra <span>8 giây</span></li>
       </ul>
     </div>
-    <UserCounter  class="user-counter"/>
+
+    <UserCounter class="user-counter" />
   </div>
 </template>
-
 
 <style scoped>
 .user-counter {
   position: fixed;
   bottom: 10px;
   right: 10px;
-  /* background: #000; */
 }
 .container {
   text-align: center;
@@ -173,7 +184,6 @@ onBeforeUnmount(() => {
   margin: 0 auto;
   padding: 2rem;
 }
-
 .status-box {
   padding: 1.5rem;
   margin: 1rem 0;
@@ -181,20 +191,17 @@ onBeforeUnmount(() => {
   font-size: 1.2rem;
   transition: all 0.3s;
 }
-
 .status-box.breathing {
   background: #e3f2fd;
   color: #0d47a1;
 }
-
 .status-box.posture {
   background: #fff8e1;
   color: #ff6f00;
 }
-
 button {
   padding: 0.8rem 1.5rem;
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
   border: none;
   border-radius: 50px;
@@ -202,11 +209,9 @@ button {
   cursor: pointer;
   transition: all 0.3s;
 }
-
 button.active {
   background: #f44336;
 }
-
 .breath-guide {
   color: rgb(21, 209, 33);
   font-weight: bold;
@@ -216,7 +221,6 @@ button.active {
   padding: 1rem;
   border-radius: 8px;
 }
-
 .breath-guide span {
   font-weight: bold;
   color: #2e7d32;
@@ -226,7 +230,6 @@ button.active {
   margin-bottom: 0.5rem;
   color: #555;
 }
-
 .checkbox {
   margin-top: 1rem;
   font-size: 1rem;
@@ -242,11 +245,9 @@ button.active {
   gap: 1rem;
   align-items: center;
 }
-
 .timer {
   margin-bottom: 1rem;
   font-weight: bold;
   color: #3f51b5;
 }
-
 </style>
