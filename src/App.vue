@@ -21,7 +21,7 @@ const sounds = {
 const isActive = ref(false);
 const status = ref('Nhấn "Bắt đầu" để thiền');
 const currentMode = ref(null); // 'breathing' | 'posture'
-const enableCount = ref(true);
+const enableCount = ref(false);
 const elapsedTime = ref(0);
 let breathInterval, postureInterval, timerInterval;
 let countTimeouts = [];
@@ -129,7 +129,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="container">
-    <h1>🧘‍♀️ Thiền & Tư Thế</h1>
+    <h1>🧘‍♀️ Thiền & Tư Thế Khi Làm Việc</h1>
 
     <div class="status-box" :class="{ breathing: currentMode === 'breathing', posture: currentMode === 'posture' }">
       {{ status }}
