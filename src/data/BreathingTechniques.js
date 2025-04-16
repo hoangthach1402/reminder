@@ -1,7 +1,7 @@
 export const TECHNIQUES = {
   DEFAULT: {
     id: 'DEFAULT',
-    name: '4-7-8 (Mặc định)',
+    name: '4-7-8 (Mặc định) ⭐⭐☆',
     steps: [
       { action: 'Hít vào', duration: 4, sound: 'breatheIn' },
       { action: 'Giữ hơi', duration: 7, sound: 'hold' },
@@ -14,7 +14,7 @@ export const TECHNIQUES = {
   },
   BOX: {
     id: 'BOX',
-    name: 'Thở hộp (Box Breathing)',
+    name: 'Thở hộp (Box Breathing) ⭐⭐',
     steps: [
       { action: 'Hít vào', duration: 4, sound: 'breatheIn' },
       { action: 'Giữ hơi', duration: 4, sound: 'hold' },
@@ -28,7 +28,7 @@ export const TECHNIQUES = {
   },
   EQUAL: {
     id: 'EQUAL',
-    name: 'Thở 4-4-4 (Equal Breathing)',
+    name: 'Thở 4-4-4 (Equal Breathing) ⭐',
     steps: [
       { action: 'Hít vào', duration: 4, sound: 'breatheIn' },
       { action: 'Thở ra', duration: 4, sound: 'breatheOut' },
