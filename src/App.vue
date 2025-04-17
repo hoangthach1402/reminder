@@ -18,7 +18,7 @@ const notificationMessage = ref('');
 const toggleMode = () => {
   if (currentMode.value === 'study') {
     router.push('/');
-    notificationMessage.value = 'Chế độ: Thiền';
+    notificationMessage.value = 'Chế độ: Thiền ';
   } else {
     router.push('/study');
     notificationMessage.value = 'Chế độ: Học tập';
@@ -49,37 +49,92 @@ const toggleMode = () => {
   </div>
 </template>
 
-<style>
-body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.6;
-  background: linear-gradient(135deg, #e6f0fa 0%, #f0f5ff 100%);
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-:root {
-  --primary-color: #4299e1;
-  --success-color: #48bb78;
-  --danger-color: #e53e3e;
-  --text-color: #2d3748;
-  --bg-color: #f7fafc;
-  --white: #ffffff;
-  --shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-}
-
+<style scoped>
 .app {
   min-height: 100vh;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
+  padding: 1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background);
+  transition: background 0.3s;
   position: relative;
 }
+
+.logo-container {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1100;
+  margin-bottom: 0;
+  display: flex;
+  align-items: flex-start;
+}
+
+.logo {
+  width: 48px;
+  height: 48px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: box-shadow 0.2s, transform 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.logo.clickable:hover {
+  box-shadow: 0 4px 16px rgba(66,153,225,0.15);
+  transform: scale(1.07);
+}
+
+.notification {
+  padding: 0.75rem 1.5rem;
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 200px;
+  padding: 0.75rem 1.5rem;
+  background: var(--primary-color, #4299e1);
+  color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+  opacity: 0;
+  z-index: 1000;
+  pointer-events: none;
+  transition: opacity 0.3s, top 0.3s;
+  font-size: 1rem;
+  font-weight: 500;
+}
+.notification.visible {
+  opacity: 1;
+  top: 2.5rem;
+  pointer-events: auto;
+}
+
+@media (max-width: 640px) {
+  .notification {
+    top: 1rem;
+    right: 0.5rem;
+    min-width: 120px;
+    max-width: 98vw;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.95rem;
+    border-radius: 10px 0 10px 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .app {
+    padding: 0.5rem 0.1rem;
+  }
+  .logo {
+    width: 36px;
+    height: 36px;
+  }
+  .notification {
+    font-size: 0.95rem;
+    padding: 0.5rem 1rem;
+  }
+}
+
+
 
 .app.meditation {
   background: linear-gradient(135deg, #e6f0fa 0%, #f0f5ff 100%);
@@ -146,10 +201,25 @@ body {
   }
 
   .notification {
-    top: 4.5rem;
-    left: 1rem;
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
+    top: 1.5rem;
+    right: 1.5rem;
+    left: auto;
+    transform: none;
+    position: fixed;
+    min-width: 180px;
+    max-width: 80vw;
+    padding: 0.7rem 1.3rem;
+    font-size: 1rem;
+    border-radius: 12px 0 12px 12px;
+    background: linear-gradient(135deg, #b2f5ea 0%, #81e6d9 100%);
+    color: #234e52;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s, top 0.3s;
+    font-weight: 500;
   }
 }
-</style>
+
+    </style>

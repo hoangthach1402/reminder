@@ -51,15 +51,16 @@ const handleClick = () => {
 
 <style scoped>
 .logo-box {
+  z-index: 1100;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.2rem;
   cursor: pointer;
-  padding: 0.5rem;
-  background-color: var(--white);
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  padding: 0.15rem 0.2rem;
+  background: transparent;
+  border-radius: 8px;
+  box-shadow: none;
+  transition: all 0.2s;
 }
 
 .logo-box:hover {
@@ -68,20 +69,16 @@ const handleClick = () => {
 }
 
 .logo-text {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #818181;
-  font-family: 'Poppins', sans-serif;
-  letter-spacing: 1px;
+  display: none;
 }
 
 .logo {
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   filter: grayscale(100%);
-  opacity: 0.8;
-  transition: background-color 0.3s ease, filter 0.3s ease, opacity 0.3s ease;
+  opacity: 0.9;
+  transition: background-color 0.2s, filter 0.2s, opacity 0.2s;
 }
 
 .logo-box:hover .logo {
@@ -91,16 +88,11 @@ const handleClick = () => {
 
 @media (max-width: 640px) {
   .logo-box {
-    padding: 0.4rem;
+    padding: 0.1rem;
   }
-
-  .logo-text {
-    font-size: 1.25rem;
-  }
-
   .logo {
-    width: 36px;
-    height: 36px;
+    width: 30px;
+    height: 30px;
   }
 }
 </style>
