@@ -42,7 +42,7 @@ const playShuffledSounds = async () => {
     return;
   }
 
-  // Nếu đã phát hết mảng, xáo trộn lại
+  // Nếu đã phát hết mảng, xáo trộn lại và bắt đầu lại vòng lặp
   if (currentSoundIndex.value >= shuffledSounds.value.length) {
     shuffledSounds.value = shuffleArray(reminderSounds.value);
     currentSoundIndex.value = 0;
@@ -50,26 +50,26 @@ const playShuffledSounds = async () => {
 
   // Lấy âm thanh hiện tại
   const currentSound = shuffledSounds.value[currentSoundIndex.value];
+  if (!currentSound) {
+    // Nếu vì lý do nào đó vẫn undefined, xáo trộn lại và bắt đầu lại
+    shuffledSounds.value = shuffleArray(reminderSounds.value);
+    currentSoundIndex.value = 0;
+    return playShuffledSounds();
+  }
 
   try {
-    // Reset thời gian âm thanh về đầu
     currentSound.currentTime = 0;
-    // Phát âm thanh
     await currentSound.play();
     console.log('Đang phát âm thanh:', currentSound.src);
   } catch (e) {
     console.error('Lỗi phát âm thanh:', e);
-    // Nếu không thể phát âm thanh này, thử âm thanh tiếp theo
     currentSoundIndex.value++;
-    playShuffledSounds();
-    return;
+    return playShuffledSounds();
   }
 
-  // Tăng index cho lần sau
   currentSoundIndex.value++;
 
-  // Đặt thời gian cho lần phát tiếp theo (dùng minReminderDelay và maxReminderDelay)
-  const minDelayMs = minReminderDelay.value * 1000; // Chuyển giây thành mili giây
+  const minDelayMs = minReminderDelay.value * 1000;
   const maxDelayMs = maxReminderDelay.value * 1000;
   const nextDelay = Math.floor(Math.random() * (maxDelayMs - minDelayMs + 1)) + minDelayMs;
   reminderTimer = setTimeout(playShuffledSounds, nextDelay);
@@ -196,7 +196,11 @@ const handleReminderToggle = () => {
 
 <template>
   <div class="page-wrapper">
-    <div class="main-container">
+    <div class="main-container study-mode">
+      <!-- <div class="study-header">
+        <UserCounter />
+        <h2 class="study-title">Chế độ học tập</h2>
+      </div> -->
       <h1>Chế độ học tập</h1>
 
       <div class="settings" :class="{ 'settings-hidden': isStudying }">

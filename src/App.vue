@@ -48,10 +48,10 @@ const toggleMode = () => {
     </div>
 
     <!-- Nút nâng cấp/ủng hộ -->
-    <!-- <div class="top-action-btns"> -->
-    <!-- <button class="premium-btn" @click="showPremium = true">🌟 Nâng cấp Premium</button>
-      <button class="donate-btn" @click="showDonate = true">❤️ Ủng hộ</button> -->
-    <!-- </div> -->
+    <div class="top-action-btns">
+      <button class="premium-btn ripple" @click="showPremium = true">🌟 Nâng cấp Premium</button>
+      <button class="donate-btn ripple" @click="showDonate = true">❤️ Ủng hộ</button>
+    </div>
 
     <CustomNotification
       v-if="showNotification"
@@ -62,8 +62,8 @@ const toggleMode = () => {
       closable
       @close="showNotification = false"
     />
-    <!-- <PremiumModal v-if="showPremium" @close="showPremium = false" /> -->
-    <!-- <DonateModal v-if="showDonate" @close="showDonate = false" /> -->
+    <PremiumModal v-if="showPremium" @close="showPremium = false" />
+    <DonateModal v-if="showDonate" @close="showDonate = false" />
     <RouterView />
   </div>
 </template>
@@ -88,6 +88,27 @@ const toggleMode = () => {
   cursor: pointer;
   box-shadow: 0 2px 12px rgba(44,62,80,0.09);
   transition: background 0.2s, color 0.2s, transform 0.12s;
+  outline: none;
+  position: relative;
+  overflow: hidden;
+}
+.premium-btn:focus, .donate-btn:focus {
+  outline: 2px solid #4299e1;
+  outline-offset: 2px;
+}
+.ripple:after {
+  content: '';
+  display: block;
+  position: absolute;
+  border-radius: 50%;
+  width: 100%; height: 100%;
+  top: 0; left: 0;
+  pointer-events: none;
+  animation: ripple-effect 0.4s linear;
+}
+@keyframes ripple-effect {
+  from { opacity: 0.4; transform: scale(0.5); }
+  to { opacity: 0; transform: scale(2.5); }
 }
 .premium-btn:hover {
   background: linear-gradient(90deg,#38b2ac,#f6e05e);
@@ -112,6 +133,21 @@ const toggleMode = () => {
   background: var(--color-background);
   transition: background 0.3s;
   position: relative;
+  font-family: 'Inter', 'Poppins', Arial, sans-serif;
+}
+@media (max-width: 640px) {
+  .app {
+    padding: 0.5rem 0.1rem;
+  }
+  .top-action-btns {
+    top: 0.6rem;
+    right: 0.7rem;
+    gap: 0.7rem;
+  }
+  .premium-btn, .donate-btn {
+    font-size: 0.98em;
+    padding: 0.45em 0.8em;
+  }
 }
 
 .logo-container {
