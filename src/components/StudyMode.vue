@@ -6,12 +6,12 @@ import { loadStudySounds } from '../utils/soundUtils';
 
 const studyDuration = ref(25);
 const breakDuration = ref(5);
-const minReminderDelay = ref(3); // Thời gian tối thiểu (giây)
-const maxReminderDelay = ref(10); // Thời gian tối đa (giây)
+const minReminderDelay = ref(60); // Thời gian tối thiểu (giây)
+const maxReminderDelay = ref(180); // Thời gian tối đa (giây)
 const isStudying = ref(false);
 const timeLeft = ref(0);
 const currentMode = ref('study');
-const enableReminders = ref(false);
+const enableReminders = ref(true);
 const reminderSounds = ref([]);
 const isLoadingSounds = ref(true);
 const currentSoundIndex = ref(0);

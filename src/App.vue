@@ -3,6 +3,7 @@
 import { RouterView, useRoute, useRouter } from 'vue-router';
 import { computed, ref } from 'vue';
 import Logo from './components/Logo.vue';
+import CustomNotification from './components/CustomNotification.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -10,25 +11,26 @@ const router = useRouter();
 // Xác định mode hiện tại dựa trên route
 const currentMode = computed(() => (route.path === '/study' ? 'study' : 'meditation'));
 
-// Trạng thái và nội dung của notification
+// Trạng thái và nội dung của notification mới
 const showNotification = ref(false);
 const notificationMessage = ref('');
+const notificationType = ref('info'); // info, success, warning, error
+const notificationIcon = ref('ℹ️');
 
 // Hàm toggle mode khi nhấn vào logo
 const toggleMode = () => {
   if (currentMode.value === 'study') {
     router.push('/');
     notificationMessage.value = 'Chế độ: Thiền ';
+    notificationType.value = 'success';
+    notificationIcon.value = '🧘';
   } else {
     router.push('/study');
     notificationMessage.value = 'Chế độ: Học tập';
+    notificationType.value = 'info';
+    notificationIcon.value = '📚';
   }
-
-  // Hiển thị notification và tự động ẩn sau 5 giây
   showNotification.value = true;
-  setTimeout(() => {
-    showNotification.value = false;
-  }, 5000);
 };
 </script>
 
@@ -39,12 +41,18 @@ const toggleMode = () => {
       <Logo class="logo" @click="toggleMode" :class="{ clickable: true }" />
     </div>
 
-    <!-- Notification -->
-    <div class="notification" :class="{ visible: showNotification }">
-      {{ notificationMessage }}
-    </div>
+
 
     <!-- Nội dung chính -->
+    <CustomNotification
+      v-if="showNotification"
+      :message="notificationMessage"
+      :type="notificationType"
+      :icon="notificationIcon"
+      :duration="3500"
+      closable
+      @close="showNotification = false"
+    />
     <RouterView />
   </div>
 </template>
