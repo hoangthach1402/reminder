@@ -1,3 +1,4 @@
+```vue
 <script setup>
 import { ref, onBeforeUnmount } from 'vue';
 import { Howl } from 'howler';
@@ -219,7 +220,7 @@ const handleClickOutside = (event) => {
       <h1>Thiền & Tư Thế Khi Làm Việc</h1>
 
       <div class="settings">
-        <div class="setting-group timer-select">
+        <div class="timer-select">
           <label for="timer-select">⏱ Hẹn giờ:</label>
           <select id="timer-select" v-model="selectedDuration" :disabled="isActive">
             <option :value="0">Không hẹn giờ</option>
@@ -230,7 +231,7 @@ const handleClickOutside = (event) => {
           </select>
         </div>
 
-        <div class="setting-group breath-technique">
+        <div class="breath-technique">
           <label for="breath-technique">Kỹ thuật thở:</label>
           <select
             id="breath-technique"
@@ -247,21 +248,10 @@ const handleClickOutside = (event) => {
           </button>
         </div>
 
-        <div class="setting-group count-setting">
-          <label class="count-label">
-            <input type="checkbox" v-model="enableCount" :disabled="!isActive" />
-            Đếm số khi thở
-          </label>
-        </div>
-      </div>
-
-      <div
-        class="status-box"
-        :class="{ breathing: currentMode === 'breathing', posture: currentMode === 'posture' }"
-        role="status"
-        aria-live="polite"
-      >
-        <span class="status-text">{{ status }}</span>
+        <label class="count-setting">
+          <input type="checkbox" v-model="enableCount" :disabled="!isActive" />
+          Đếm số khi thở
+        </label>
       </div>
 
       <div class="controls">
@@ -270,23 +260,27 @@ const handleClickOutside = (event) => {
         </button>
       </div>
 
+      <div class="status-box" :class="{ breathing: currentMode === 'breathing', posture: currentMode === 'posture' }">
+        {{ status }}
+      </div>
+
       <div class="timer">
         🕒 Thời gian thiền: {{ Math.floor(elapsedTime / 60) }} phút {{ elapsedTime % 60 }} giây
       </div>
 
-      <!-- Modal -->
-      <Teleport to="body">
-        <div v-if="isModalOpen" class="modal-overlay" @click="handleClickOutside">
-          <div class="modal-content">
-            <button class="close-button" @click="closeModal">×</button>
-            <h2>Hướng dẫn kỹ thuật thở</h2>
-            <BreathingGuide :technique="breathingTechnique" />
-          </div>
-        </div>
-      </Teleport>
-
       <UserCounter class="user-counter" />
     </div>
+
+    <!-- Modal -->
+    <Teleport to="body">
+      <div v-if="isModalOpen" class="modal-overlay" @click="handleClickOutside">
+        <div class="modal-content">
+          <button class="close-button" @click="closeModal">&times;</button>
+          <h2>Hướng dẫn kỹ thuật thở</h2>
+          <BreathingGuide :technique="breathingTechnique" />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -297,6 +291,7 @@ const handleClickOutside = (event) => {
   align-items: center;
   min-height: calc(100vh - 100px);
   padding: 1rem;
+  padding-top: 6rem; /* Đảm bảo không bị che bởi logo và notification */
 }
 
 .main-container {
@@ -326,18 +321,6 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-}
-
-.setting-group {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background-color: var(--bg-color);
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
 }
 
 .timer-select,
@@ -377,31 +360,34 @@ h1 {
 }
 
 button {
-  padding: 0.75rem 2rem;
+  padding: 1rem 2.5rem;
   font-size: 1.1rem;
-  font-weight: 500;
   border: none;
   border-radius: 12px;
-  background-color: var(--primary-color);
-  color: var(--white);
+  background-color: #48bb78;
+  color: white;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-button:hover {
-  background-color: #3182ce;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(49, 130, 206, 0.3);
+button:hover:not(:disabled) {
+  background-color: #38a169;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
 button.active {
-  background-color: var(--success-color);
+  background-color: #4299e1;
 }
 
-button.active:hover {
-  background-color: #38a169;
-  box-shadow: 0 6px 12px rgba(56, 161, 105, 0.3);
+button.active:hover:not(:disabled) {
+  background-color: #3182ce;
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .timer {
@@ -466,10 +452,12 @@ input[type="checkbox"]:disabled {
 }
 
 .controls {
+  margin: 1rem 0;
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 1.5rem;
-  margin: 1.5rem 0;
+  gap: 1rem;
+  flex-shrink: 0;
 }
 
 .user-counter {
@@ -487,24 +475,21 @@ input[type="checkbox"]:disabled {
 
 .guide-button {
   padding: 0.5rem;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--white);
-  border: 2px solid var(--primary-color);
-  color: var(--primary-color);
-  cursor: pointer;
-  transition: all 0.3s ease;
+  background-color: transparent;
+  border: 2px solid #4299e1;
+  color: #4299e1;
+  font-size: 1rem;
 }
 
 .guide-button:hover {
-  background-color: var(--primary-color);
-  color: var(--white);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(49, 130, 206, 0.3);
+  background-color: #4299e1;
+  color: white;
 }
 
 .modal-overlay {
@@ -588,12 +573,23 @@ input[type="checkbox"]:disabled {
 }
 
 @media (max-width: 640px) {
+  .page-wrapper {
+    padding-top: 5rem; /* Đảm bảo không bị che bởi logo và notification */
+    padding: 0.5rem;
+  }
+
   .main-container {
-    padding: 1.5rem;
+    padding: 1rem;
+    border-radius: 16px;
   }
 
   h1 {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .settings {
+    gap: 0.75rem;
   }
 
   .setting-group {
@@ -602,32 +598,82 @@ input[type="checkbox"]:disabled {
     padding: 0.5rem;
   }
 
+  .timer-select,
+  .breath-technique,
+  .count-setting {
+    padding: 0.5rem;
+  }
+
+  select {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    width: 100%; /* Đảm bảo select chiếm toàn bộ chiều rộng */
+    max-width: 200px;
+  }
+
+  label {
+    font-size: 0.9rem;
+  }
+
+  input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+  }
+
   .status-box {
-    padding: 1.5rem;
+    padding: 1rem;
     min-height: 100px;
   }
 
   .status-text {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
+  }
+
+  .controls {
+    margin: 0.75rem 0;
   }
 
   button {
-    padding: 0.75rem 1.5rem;
+    padding: 0.75rem 2rem;
     font-size: 1rem;
   }
 
-  .timer {
+  .guide-button {
+    padding: 0.4rem;
+    width: 1.8rem;
+    height: 1.8rem;
     font-size: 0.9rem;
+  }
+
+  .timer {
+    font-size: 0.85rem;
     padding: 0.5rem;
+  }
+
+  .user-counter {
+    bottom: 1rem;
+    right: 1rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
   }
 
   .modal-content {
     width: 95%;
-    padding: 1.5rem;
+    padding: 1rem;
+    border-radius: 16px;
   }
 
   .modal-content h2 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .close-button {
+    top: 0.5rem;
+    right: 0.5rem;
+    font-size: 1.5rem;
+    width: 2rem;
+    height: 2rem;
   }
 }
 </style>
