@@ -1,14 +1,18 @@
-```vue
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
+
+// Import ảnh trực tiếp để Vite/Webpack xử lý đúng
+import LogoStudy from '../assets/LogoStudy.png';
+
+import logoMeditation from '../assets/logoMeditaiton.png';
 
 // Lấy route hiện tại
 const route = useRoute();
 
-// Xác định hình ảnh logo dựa trên route
-const logoSrc = route.path === '/study' ? '../assets/LogoStudy.png' : '.../assets/logoMeditation.png';
-// console.log(logoSrc);
+// Xác định hình ảnh logo dựa trên route (sử dụng computed để phản ứng với thay đổi route)
+const logoSrc = computed(() => route.path === '/study' ? LogoStudy : logoMeditation);
+
 // Quản lý trạng thái màu nền
 const backgroundColor = ref('default'); // Mặc định
 
@@ -34,14 +38,17 @@ const changeBackgroundColor = () => {
 const handleClick = () => {
   changeBackgroundColor();
   // Emit sự kiện click để App.vue xử lý toggle mode
+  emit('click');
 };
-</script>
 
+// Định nghĩa emit
+const emit = defineEmits(['click']);
+</script>
 <template>
   <div class="logo-box" @click="handleClick">
     <span class="logo-text">De</span>
     <img
-      src="../assets/LogoStudy.png"
+      :src="logoSrc"
       alt="Logo ứng dụng thiền và tư thế"
       class="logo"
       :style="{ backgroundColor: colors[backgroundColor] }"

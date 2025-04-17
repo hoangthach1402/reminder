@@ -268,26 +268,47 @@ const handleReminderToggle = () => {
           <button class="close-button" @click="closeReminderModal">&times;</button>
           <h2>Cài đặt nhắc nhở tập trung</h2>
           
-          <div class="reminder-delay">
-            <label>Thời gian nhắc nhở (giây):</label>
-            <div class="delay-inputs">
-              <input
-                type="number"
-                v-model.number="minReminderDelay"
-                min="1"
-                max="300"
-                :disabled="isStudying || isLoadingSounds"
-                placeholder="Tối thiểu"
-              />
-              <span>đến</span>
-              <input
-                type="number"
-                v-model.number="maxReminderDelay"
-                min="1"
-                max="300"
-                :disabled="isStudying || isLoadingSounds"
-                placeholder="Tối đa"
-              />
+          <div class="reminder-settings-container">
+            <div class="reminder-explanation">
+              <div class="info-icon">ℹ️</div>
+              <p>Tính năng này sẽ phát âm thanh nhắc nhở trong quá trình học tập để giúp bạn duy trì tập trung và tư thế đúng.</p>
+            </div>
+            
+            <div class="reminder-delay">
+              <label>Thời gian giữa các lần nhắc nhở:</label>
+              <div class="delay-inputs">
+                <div class="input-group">
+                  <span class="input-label">Tối thiểu</span>
+                  <input
+                    type="number"
+                    v-model.number="minReminderDelay"
+                    min="30"
+                    max="600"
+                    :disabled="isStudying || isLoadingSounds"
+                    placeholder="Tối thiểu"
+                  />
+                  <span class="input-unit">giây</span>
+                </div>
+                
+                <div class="input-separator">đến</div>
+                
+                <div class="input-group">
+                  <span class="input-label">Tối đa</span>
+                  <input
+                    type="number"
+                    v-model.number="maxReminderDelay"
+                    min="30"
+                    max="600"
+                    :disabled="isStudying || isLoadingSounds"
+                    placeholder="Tối đa"
+                  />
+                  <span class="input-unit">giây</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="reminder-actions">
+              <button class="save-button" @click="closeReminderModal">Lưu cài đặt</button>
             </div>
           </div>
         </div>
@@ -604,31 +625,176 @@ label {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.9);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: none;
 }
 
 .modal-content {
-  background-color: var(--dark-gray);
+  background-color: #222;
   padding: 2rem;
-  border-radius: 20px;
+  border-radius: 16px;
   max-width: 90%;
-  width: 500px;
+  width: 550px;
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--medium-gray);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  border: 2px solid var(--soft-yellow);
 }
 
 .modal-content h2 {
-  color: var(--text-yellow);
+  color: var(--primary-yellow);
   margin-bottom: 1.5rem;
   padding-right: 2rem;
-  font-size: 1.3rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  border-bottom: 2px solid var(--primary-yellow);
+  padding-bottom: 0.75rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.reminder-settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.reminder-explanation {
+  background-color: #333;
+  border-left: 4px solid var(--primary-yellow);
+  padding: 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.info-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.reminder-explanation p {
+  color: #fff;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.reminder-delay {
+  background-color: #333;
+  padding: 1.75rem;
+  border-radius: 12px;
+  border: 2px solid var(--primary-yellow);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.reminder-delay label {
+  display: block;
+  color: var(--primary-yellow);
+  font-size: 1.2rem;
   font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.delay-inputs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.input-label {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.input-unit {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
+
+.input-separator {
+  color: var(--primary-yellow);
+  font-weight: 600;
+  font-size: 1.1rem;
+  padding: 0 0.5rem;
+  align-self: center;
+  margin-top: 1.5rem;
+}
+
+.delay-inputs input {
+  background-color: #191919;
+  border: 3px solid var(--primary-yellow);
+  color: white;
+  padding: 0.9rem 0.75rem;
+  border-radius: 10px;
+  width: 100%;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+.delay-inputs input:focus {
+  outline: none;
+  border-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.4);
+}
+
+.delay-inputs input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  border-color: #666;
+}
+
+.reminder-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.save-button {
+  background-color: var(--primary-yellow);
+  color: var(--darker-gray);
+  border: none;
+  border-radius: 12px;
+  padding: 1rem 2.5rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  letter-spacing: 1px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+}
+
+.save-button:hover {
+  background-color: #ffea00;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  color: #000000;
+  font-weight: 800;
 }
 
 .close-button {
@@ -654,50 +820,6 @@ label {
 .close-button:hover {
   background-color: var(--soft-yellow);
   color: var(--darker-gray);
-}
-
-.reminder-delay {
-  background-color: var(--medium-gray);
-  padding: 1.5rem;
-  border-radius: 12px;
-  border: 1px solid var(--light-gray);
-}
-
-.reminder-delay label {
-  display: block;
-  margin-bottom: 1rem;
-  color: var(--text-yellow);
-  font-size: 1.1rem;
-}
-
-.delay-inputs {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.delay-inputs input {
-  background-color: var(--dark-gray);
-  border: 2px solid var(--soft-yellow);
-  color: var(--text-yellow);
-  padding: 0.75rem;
-  border-radius: 8px;
-  width: 120px;
-  text-align: center;
-  font-size: 1rem;
-}
-
-.delay-inputs input:focus {
-  outline: none;
-  border-color: var(--primary-yellow);
-  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
-}
-
-.delay-inputs span {
-  color: var(--text-yellow);
-  font-weight: 500;
-  font-size: 1rem;
 }
 
 @media (max-width: 640px) {
@@ -822,30 +944,39 @@ label {
     margin-bottom: 1rem;
   }
 
-  .close-button {
-    top: 0.75rem;
-    right: 0.75rem;
-    font-size: 1.25rem;
+  .reminder-settings-container {
+    gap: 1rem;
+  }
+
+  .reminder-explanation {
+    padding: 0.75rem;
   }
 
   .reminder-delay {
     padding: 1rem;
   }
 
-  .reminder-delay label {
-    font-size: 1rem;
-  }
-
   .delay-inputs {
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 1rem;
+  }
+
+  .input-group {
+    width: 100%;
+  }
+
+  .input-separator {
+    margin: 0;
   }
 
   .delay-inputs input {
+    font-size: 1rem;
+    padding: 0.6rem;
+  }
+
+  .save-button {
     width: 100%;
-    max-width: 200px;
-    padding: 0.5rem;
-    font-size: 0.9rem;
+    padding: 0.75rem;
   }
 
   .close-button {
