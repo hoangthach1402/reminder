@@ -41,7 +41,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .user-counter-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: cưolumn;
   gap: 20px;
   padding: 20px;
 }
