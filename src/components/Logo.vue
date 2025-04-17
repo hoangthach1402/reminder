@@ -1,6 +1,14 @@
+```vue
 <script setup>
 import { ref } from 'vue';
+import { useRoute } from 'vue-router';
 
+// Lấy route hiện tại
+const route = useRoute();
+
+// Xác định hình ảnh logo dựa trên route
+const logoSrc = route.path === '/study' ? '../assets/LogoStudy.png' : '.../assets/logoMeditation.png';
+// console.log(logoSrc);
 // Quản lý trạng thái màu nền
 const backgroundColor = ref('default'); // Mặc định
 
@@ -22,7 +30,7 @@ const changeBackgroundColor = () => {
   }
 };
 
-// Kết hợp cả hai hành động: đổi màu và toggle mode (emit sự kiện click)
+// Kết hợp cả hai hành động: đổi màu và emit sự kiện click
 const handleClick = () => {
   changeBackgroundColor();
   // Emit sự kiện click để App.vue xử lý toggle mode
@@ -33,7 +41,7 @@ const handleClick = () => {
   <div class="logo-box" @click="handleClick">
     <span class="logo-text">De</span>
     <img
-      src="../assets/logoMeditaiton.png"
+      src="../assets/LogoStudy.png"
       alt="Logo ứng dụng thiền và tư thế"
       class="logo"
       :style="{ backgroundColor: colors[backgroundColor] }"

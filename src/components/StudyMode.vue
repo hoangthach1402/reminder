@@ -16,6 +16,7 @@ const reminderSounds = ref([]);
 const isLoadingSounds = ref(true);
 const currentSoundIndex = ref(0);
 const shuffledSounds = ref([]);
+const isReminderModalOpen = ref(false);
 
 let timer = null;
 let reminderTimer = null;
@@ -173,6 +174,24 @@ onBeforeUnmount(() => {
     if (sound.unload) sound.unload();
   });
 });
+
+const openReminderModal = () => {
+  if (enableReminders.value && !isStudying.value) {
+    isReminderModalOpen.value = true;
+  }
+};
+
+const closeReminderModal = () => {
+  if (!isStudying.value) {
+    isReminderModalOpen.value = false;
+  }
+};
+
+const handleReminderToggle = () => {
+  if (enableReminders.value) {
+    openReminderModal();
+  }
+};
 </script>
 
 <template>
@@ -206,6 +225,7 @@ onBeforeUnmount(() => {
               type="checkbox"
               v-model="enableReminders"
               :disabled="isStudying || isLoadingSounds"
+              @change="handleReminderToggle"
             />
             🔔 Bật nhắc nhở tập trung
             <span v-if="isLoadingSounds" class="loading-text">
@@ -213,31 +233,16 @@ onBeforeUnmount(() => {
             </span>
           </label>
         </div>
+      </div>
 
-        <div class="setting-group reminder-delay" v-if="enableReminders">
-          <label for="min-reminder-delay">Thời gian nhắc nhở (giây):</label>
-          <div class="delay-inputs">
-            <input
-              type="number"
-              id="min-reminder-delay"
-              v-model.number="minReminderDelay"
-              min="1"
-              max="300"
-              :disabled="isStudying || isLoadingSounds"
-              placeholder="Tối thiểu"
-            />
-            <span>đến</span>
-            <input
-              type="number"
-              id="max-reminder-delay"
-              v-model.number="maxReminderDelay"
-              min="1"
-              max="300"
-              :disabled="isStudying || isLoadingSounds"
-              placeholder="Tối đa"
-            />
-          </div>
-        </div>
+      <div class="controls">
+        <button
+          @click="isStudying ? stopSession() : startStudySession()"
+          :class="{ active: isStudying }"
+          :disabled="isLoadingSounds && !isStudying"
+        >
+          {{ isStudying ? 'Dừng' : 'Bắt đầu học' }}
+        </button>
       </div>
 
       <div
@@ -253,29 +258,54 @@ onBeforeUnmount(() => {
         </template>
       </div>
 
-      <div class="controls">
-        <button
-          @click="isStudying ? stopSession() : startStudySession()"
-          :class="{ active: isStudying }"
-          :disabled="isLoadingSounds && !isStudying"
-        >
-          {{ isStudying ? 'Dừng' : 'Bắt đầu học' }}
-        </button>
-      </div>
-
       <UserCounter class="user-counter" />
     </div>
+
+    <!-- Modal cài đặt nhắc nhở -->
+    <Teleport to="body">
+      <div v-if="isReminderModalOpen" class="modal-overlay" @click="closeReminderModal">
+        <div class="modal-content" @click.stop>
+          <button class="close-button" @click="closeReminderModal">&times;</button>
+          <h2>Cài đặt nhắc nhở tập trung</h2>
+          
+          <div class="reminder-delay">
+            <label>Thời gian nhắc nhở (giây):</label>
+            <div class="delay-inputs">
+              <input
+                type="number"
+                v-model.number="minReminderDelay"
+                min="1"
+                max="300"
+                :disabled="isStudying || isLoadingSounds"
+                placeholder="Tối thiểu"
+              />
+              <span>đến</span>
+              <input
+                type="number"
+                v-model.number="maxReminderDelay"
+                min="1"
+                max="300"
+                :disabled="isStudying || isLoadingSounds"
+                placeholder="Tối đa"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <style scoped>
 :root {
-  --primary-color: #4299e1; /* Màu xanh dương cho chế độ nghỉ */
-  --success-color: #48bb78; /* Màu xanh lá cho chế độ học */
-  --text-color: #2d3748;
-  --bg-color: #f7fafc;
-  --white: #ffffff;
-  --shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  --primary-yellow: #ffd700;
+  --soft-yellow: #f4d03f;
+  --dark-yellow: #d4ac0d;
+  --light-gray: #a0a0a0;
+  --medium-gray: #4a4a4a;
+  --dark-gray: #2c2c2c;
+  --darker-gray: #1a1a1a;
+  --text-yellow: #ffd95a;
 }
 
 .page-wrapper {
@@ -284,15 +314,17 @@ onBeforeUnmount(() => {
   align-items: center;
   min-height: calc(100vh - 100px);
   padding: 1rem;
+  padding-top: 6rem; /* Đảm bảo không bị che bởi logo và notification */
+  background-color: var(--darker-gray);
 }
 
 .main-container {
-  background-color: var(--white);
+  background-color: var(--dark-gray);
   padding: 2rem;
   border-radius: 24px;
   max-width: 600px;
   width: 100%;
-  box-shadow: var(--shadow);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -301,10 +333,10 @@ onBeforeUnmount(() => {
 }
 
 h1 {
-  color: var(--text-color);
-  font-size: 1.75rem;
+  color: var(--text-yellow);
+  font-size: 1.4rem;
   font-weight: 600;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -316,10 +348,11 @@ h1 {
   flex-direction: column;
   gap: 1rem;
   padding: 1.5rem;
-  background-color: var(--bg-color);
+  background-color: var(--medium-gray);
   border-radius: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .settings-hidden {
@@ -340,9 +373,9 @@ h1 {
 
 .reminder-setting {
   padding: 1rem;
-  background-color: var(--white);
+  background-color: var(--medium-gray);
   border-radius: 12px;
-  border: 2px solid var(--success-color);
+  border: 2px solid var(--soft-yellow);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -351,26 +384,26 @@ h1 {
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
-  color: var(--text-color);
+  color: var(--text-yellow);
   font-weight: 500;
   font-size: 1rem;
   font-family: 'Poppins', sans-serif;
 }
 
 .reminder-label input[type="checkbox"] {
-  width: 1.25rem;
-  height: 1.25rem;
-  accent-color: var(--success-color);
+  width: 1.2rem;
+  height: 1.2rem;
+  accent-color: var(--soft-yellow);
   transition: all 0.3s ease;
 }
 
 .reminder-label:hover:not(:disabled) {
-  color: var(--success-color);
+  color: var(--soft-yellow);
 }
 
 .loading-text {
   font-size: 0.9rem;
-  color: #718096;
+  color: var(--light-gray);
   margin-left: 0.5rem;
   font-family: 'Poppins', sans-serif;
 }
@@ -380,6 +413,7 @@ h1 {
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .delay-inputs {
@@ -392,9 +426,9 @@ h1 {
   width: 100px;
   padding: 0.75rem;
   border-radius: 10px;
-  border: 2px solid var(--success-color);
-  background-color: var(--white);
-  color: var(--text-color);
+  border: 2px solid var(--soft-yellow);
+  background-color: var(--dark-gray);
+  color: var(--text-yellow);
   font-size: 1rem;
   text-align: center;
   transition: all 0.3s ease;
@@ -402,52 +436,50 @@ h1 {
 }
 
 .delay-inputs input:hover:not(:disabled) {
-  border-color: #38a169;
-  background-color: #f0fff4;
-  box-shadow: 0 2px 4px rgba(72, 187, 120, 0.2);
+  border-color: var(--primary-yellow);
+  background-color: var(--medium-gray);
+  box-shadow: 0 2px 4px rgba(255, 215, 0, 0.2);
 }
 
 .delay-inputs input:disabled {
-  background-color: #edf2f7;
+  background-color: var(--medium-gray);
   cursor: not-allowed;
   opacity: 0.7;
 }
 
 .delay-inputs span {
-  color: var(--text-color);
+  color: var(--text-yellow);
   font-weight: 500;
   font-family: 'Poppins', sans-serif;
 }
 
 .status-box {
-  padding: 1rem;
+  padding: 2rem;
   border-radius: 16px;
-  background: linear-gradient(135deg, #f0fff4 0%, #e6fff4 100%);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, var(--medium-gray) 0%, var(--dark-gray) 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 100px;
+  min-height: 150px;
   transition: all 0.5s ease;
-  flex-grow: 1;
+  flex: 1;
+  margin: 1rem 0;
+  color: var(--text-yellow);
 }
 
 .status-box.study {
-  background: linear-gradient(135deg, var(--success-color) 0%, #7ed4a1 100%);
-  color: var(--white);
-  box-shadow: 0 6px 12px rgba(72, 187, 120, 0.3);
+  background: linear-gradient(135deg, var(--dark-yellow) 0%, var(--medium-gray) 100%);
 }
 
 .status-box.break {
-  background: linear-gradient(135deg, var(--primary-color) 0%, #74b3f0 100%);
-  color: var(--white);
-  box-shadow: 0 6px 12px rgba(66, 153, 225, 0.3);
+  background: linear-gradient(135deg, var(--medium-gray) 0%, var(--dark-gray) 100%);
 }
 
 h2 {
-  color: inherit;
-  font-size: 1.5rem;
+  color: var(--text-yellow);
+  font-size: 1.2rem;
   font-weight: 500;
   margin-bottom: 1rem;
   text-align: center;
@@ -455,64 +487,65 @@ h2 {
 }
 
 .timer {
-  font-size: 3.5rem;
-  font-weight: 600;
+  font-size: 2.75rem;
+  font-weight: bold;
   margin: 0.5rem 0;
   font-variant-numeric: tabular-nums;
-  color: inherit;
+  color: var(--primary-yellow);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   font-family: 'Poppins', sans-serif;
   letter-spacing: 2px;
 }
 
 .controls {
-  margin: 1.5rem 0;
+  margin: 1rem 0;
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 1.5rem;
+  gap: 1rem;
+  flex-shrink: 0;
 }
 
 button {
-  padding: 0.75rem 2rem;
+  padding: 1rem 2.5rem;
   font-size: 1.1rem;
-  font-weight: 500;
   border: none;
   border-radius: 12px;
-  background-color: var(--success-color);
-  color: var(--white);
+  background-color: var(--soft-yellow);
+  color: var(--darker-gray);
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  font-family: 'Poppins', sans-serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
 }
 
-button:hover {
-  background-color: #38a169;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(56, 161, 105, 0.3);
+button:hover:not(:disabled) {
+  background-color: var(--primary-yellow);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 button.active {
-  background-color: var(--primary-color);
+  background-color: var(--dark-yellow);
+  color: var(--darker-gray);
 }
 
-button.active:hover {
-  background-color: #3182ce;
-  box-shadow: 0 6px 12px rgba(49, 130, 206, 0.3);
+button.active:hover:not(:disabled) {
+  background-color: var(--soft-yellow);
 }
 
 button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
+  background-color: var(--light-gray);
 }
 
 select {
   padding: 0.75rem 1.5rem;
   border-radius: 10px;
-  border: 2px solid var(--success-color);
-  background-color: var(--white);
-  color: var(--text-color);
+  border: 2px solid var(--soft-yellow);
+  background-color: var(--dark-gray);
+  color: var(--text-yellow);
   font-size: 1rem;
   font-weight: 500;
   transition: all 0.3s ease;
@@ -521,19 +554,20 @@ select {
 }
 
 select:hover:not(:disabled) {
-  border-color: #38a169;
-  background-color: #f0fff4;
-  box-shadow: 0 2px 4px rgba(72, 187, 120, 0.2);
+  border-color: var(--primary-yellow);
+  background-color: var(--medium-gray);
 }
 
 select:disabled {
-  background-color: #edf2f7;
+  background-color: var(--medium-gray);
+  border-color: var(--light-gray);
+  color: var(--light-gray);
   cursor: not-allowed;
   opacity: 0.7;
 }
 
 label {
-  color: var(--text-color);
+  color: var(--text-yellow);
   font-weight: 500;
   font-size: 1rem;
   font-family: 'Poppins', sans-serif;
@@ -543,13 +577,13 @@ label {
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  background-color: var(--white);
+  background-color: var(--dark-gray);
   padding: 0.5rem 1rem;
   border-radius: 12px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--text-color);
+  color: var(--text-yellow);
   font-family: 'Poppins', sans-serif;
 }
 
@@ -564,19 +598,129 @@ label {
   animation: pulse 2s infinite ease-in-out;
 }
 
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background-color: var(--dark-gray);
+  padding: 2rem;
+  border-radius: 20px;
+  max-width: 90%;
+  width: 500px;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--medium-gray);
+}
+
+.modal-content h2 {
+  color: var(--text-yellow);
+  margin-bottom: 1.5rem;
+  padding-right: 2rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-yellow);
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  transition: all 0.3s ease;
+  background-color: var(--medium-gray);
+}
+
+.close-button:hover {
+  background-color: var(--soft-yellow);
+  color: var(--darker-gray);
+}
+
+.reminder-delay {
+  background-color: var(--medium-gray);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--light-gray);
+}
+
+.reminder-delay label {
+  display: block;
+  margin-bottom: 1rem;
+  color: var(--text-yellow);
+  font-size: 1.1rem;
+}
+
+.delay-inputs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.delay-inputs input {
+  background-color: var(--dark-gray);
+  border: 2px solid var(--soft-yellow);
+  color: var(--text-yellow);
+  padding: 0.75rem;
+  border-radius: 8px;
+  width: 120px;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.delay-inputs input:focus {
+  outline: none;
+  border-color: var(--primary-yellow);
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+}
+
+.delay-inputs span {
+  color: var(--text-yellow);
+  font-weight: 500;
+  font-size: 1rem;
+}
+
 @media (max-width: 640px) {
+  .page-wrapper {
+    padding-top: 5rem; /* Đảm bảo không bị che bởi logo và notification */
+    padding: 0.5rem;
+  }
+
   .main-container {
-    padding: 1.5rem;
+    padding: 1rem;
+    border-radius: 16px;
     min-height: 500px;
   }
 
   h1 {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
   }
 
   .settings {
     padding: 1rem;
     gap: 0.75rem;
+    flex-shrink: 0;
   }
 
   .setting-group {
@@ -584,21 +728,111 @@ label {
     gap: 0.5rem;
   }
 
+  .reminder-setting {
+    padding: 0.75rem;
+  }
+
+  .reminder-label {
+    font-size: 0.9rem;
+  }
+
+  .reminder-label input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .loading-text {
+    font-size: 0.8rem;
+    margin-left: 0;
+    margin-top: 0.25rem;
+  }
+
+  .reminder-delay {
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .delay-inputs {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .delay-inputs input {
+    width: 100%;
+    max-width: 150px;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .delay-inputs span {
+    font-size: 0.9rem;
+  }
+
+  select {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    width: 100%;
+    max-width: 200px;
+  }
+
+  label {
+    font-size: 0.9rem;
+  }
+
   .status-box {
-    padding: 1.5rem;
+    padding: 1rem;
     min-height: 120px;
+    flex: 1;
+    margin: 0.75rem 0;
   }
 
   h2 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
   }
 
   .timer {
-    font-size: 2.5rem;
+    font-size: 2.25rem;
+    letter-spacing: 1px;
+  }
+
+  .controls {
+    margin: 0.75rem 0;
   }
 
   button {
-    padding: 0.75rem 1.5rem;
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+  }
+
+  .user-counter {
+    bottom: 1rem;
+    right: 1rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .modal-content {
+    padding: 1.5rem;
+    width: 95%;
+  }
+
+  .modal-content h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+
+  .close-button {
+    top: 0.75rem;
+    right: 0.75rem;
+    font-size: 1.25rem;
+  }
+
+  .reminder-delay {
+    padding: 1rem;
+  }
+
+  .reminder-delay label {
     font-size: 1rem;
   }
 
@@ -608,12 +842,17 @@ label {
   }
 
   .delay-inputs input {
-    width: 120px;
+    width: 100%;
+    max-width: 200px;
+    padding: 0.5rem;
+    font-size: 0.9rem;
   }
 
-  .loading-text {
-    display: block;
-    margin-left: 1.7rem;
+  .close-button {
+    top: 0.75rem;
+    right: 0.75rem;
+    font-size: 1.25rem;
   }
 }
 </style>
+```
