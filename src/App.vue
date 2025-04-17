@@ -4,6 +4,8 @@ import { RouterView, useRoute, useRouter } from 'vue-router';
 import { computed, ref } from 'vue';
 import Logo from './components/Logo.vue';
 import CustomNotification from './components/CustomNotification.vue';
+import PremiumModal from './components/PremiumModal.vue';
+import DonateModal from './components/DonateModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -16,6 +18,10 @@ const showNotification = ref(false);
 const notificationMessage = ref('');
 const notificationType = ref('info'); // info, success, warning, error
 const notificationIcon = ref('ℹ️');
+
+// State cho modal premium/donate
+const showPremium = ref(false);
+const showDonate = ref(false);
 
 // Hàm toggle mode khi nhấn vào logo
 const toggleMode = () => {
@@ -41,9 +47,12 @@ const toggleMode = () => {
       <Logo class="logo" @click="toggleMode" :class="{ clickable: true }" />
     </div>
 
+    <!-- Nút nâng cấp/ủng hộ -->
+    <div class="top-action-btns">
+      <button class="premium-btn" @click="showPremium = true">🌟 Nâng cấp Premium</button>
+      <button class="donate-btn" @click="showDonate = true">❤️ Ủng hộ</button>
+    </div>
 
-
-    <!-- Nội dung chính -->
     <CustomNotification
       v-if="showNotification"
       :message="notificationMessage"
@@ -53,11 +62,48 @@ const toggleMode = () => {
       closable
       @close="showNotification = false"
     />
+    <PremiumModal v-if="showPremium" @close="showPremium = false" />
+    <DonateModal v-if="showDonate" @close="showDonate = false" />
     <RouterView />
   </div>
 </template>
 
 <style scoped>
+.top-action-btns {
+  position: fixed;
+  top: 1.2rem;
+  right: 2.2rem;
+  z-index: 2100;
+  display: flex;
+  gap: 1rem;
+}
+.premium-btn, .donate-btn {
+  background: linear-gradient(90deg,#f6e05e,#38b2ac);
+  color: #1a365d;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5em 1.1em;
+  font-size: 1.07em;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(44,62,80,0.09);
+  transition: background 0.2s, color 0.2s, transform 0.12s;
+}
+.premium-btn:hover {
+  background: linear-gradient(90deg,#38b2ac,#f6e05e);
+  color: #234e52;
+  transform: scale(1.06);
+}
+.donate-btn {
+  background: linear-gradient(90deg,#f687b3,#ecc94b);
+  color: #5a1e36;
+}
+.donate-btn:hover {
+  background: linear-gradient(90deg,#ecc94b,#f687b3);
+  color: #2d3748;
+  transform: scale(1.06);
+}
+
 .app {
   min-height: 100vh;
   padding: 1rem 0.5rem;
