@@ -48,10 +48,10 @@ const toggleMode = () => {
     </div>
 
     <!-- Nút nâng cấp/ủng hộ -->
-    <div class="top-action-btns">
-      <button class="premium-btn" @click="showPremium = true">🌟 Nâng cấp Premium</button>
-      <button class="donate-btn" @click="showDonate = true">❤️ Ủng hộ</button>
-    </div>
+    <!-- <div class="top-action-btns"> -->
+    <!-- <button class="premium-btn" @click="showPremium = true">🌟 Nâng cấp Premium</button>
+      <button class="donate-btn" @click="showDonate = true">❤️ Ủng hộ</button> -->
+    <!-- </div> -->
 
     <CustomNotification
       v-if="showNotification"
@@ -62,8 +62,8 @@ const toggleMode = () => {
       closable
       @close="showNotification = false"
     />
-    <PremiumModal v-if="showPremium" @close="showPremium = false" />
-    <DonateModal v-if="showDonate" @close="showDonate = false" />
+    <!-- <PremiumModal v-if="showPremium" @close="showPremium = false" /> -->
+    <!-- <DonateModal v-if="showDonate" @close="showDonate = false" /> -->
     <RouterView />
   </div>
 </template>
